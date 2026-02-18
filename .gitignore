@@ -1,0 +1,59 @@
+# Virtual Environment
+env/
+venv/
+.venv/
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pycache
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# PDF output (generated at runtime)
+SentinelAI_Report.pdf
+*.pdf
+
+# ── Model files (too large for GitHub — use Git LFS or host separately) ──────
+# The trained model weights are large binary files.
+# Upload to HuggingFace Hub or use Git LFS instead.
+models/sentinel_model/model.safetensors
+models/models/sentinel_model/model.safetensors
+
+# Training checkpoints (intermediate, not needed for inference)
+models/results/
+results/
+
+# Training optimizer states (very large, not needed for inference)
+*.pt
+optimizer.pt
+rng_state.pth
+
+# Training artifacts
+trainer_state.json
+training_args.bin
+
+# Logs
+*.log
+logs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Pytest / coverage
+.pytest_cache/
+htmlcov/
+.coverage
