@@ -292,5 +292,4 @@ MIT License — see [LICENSE](LICENSE) for details.
 <div align="center">
 
 Built with ❤️ using Flask · HuggingFace Transformers · ReportLab
-
 </div>
