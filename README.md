@@ -281,6 +281,7 @@ models/sentinel_model/model.safetensors
 ```bash
 cd models
 python train_model_v2.py
+# huggingface-cli download Shade-63/sentinel-model --local-dir models/sentinel_model
 ```
 
 ### 5. Run the application
@@ -393,4 +394,5 @@ SentinelAI provides AI-based probabilistic risk estimation and does **not** cons
 
 *Protecting innocents from digital threats through AI-powered intelligence*
 
+Built with ❤️ using Flask · HuggingFace Transformers · ReportLab
 </div>
