@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support, con
 from sklearn.utils.class_weight import compute_class_weight
 
 # Load dataset
-df = pd.read_csv("sentinel_dataset_audited.csv")
+df = pd.read_csv("D:\Sentinel\data\sentinel_dataset_expanded.csv")
 
 # Basic cleaning
 df = df.dropna()
