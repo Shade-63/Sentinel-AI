@@ -393,6 +393,4 @@ SentinelAI provides AI-based probabilistic risk estimation and does **not** cons
 **Built with** Flask · HuggingFace Transformers · PyTorch · ReportLab
 
 *Protecting innocents from digital threats through AI-powered intelligence*
-
-Built with ❤️ using Flask · HuggingFace Transformers · ReportLab
 </div>
