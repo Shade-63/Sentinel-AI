@@ -57,3 +57,18 @@ logs/
 .pytest_cache/
 htmlcov/
 .coverage
+
+# ── Dev / Debug scripts (keep locally, don't push) ────────────────────────────
+app/texting.py
+app/diagnose_model.py
+app/eval.py
+app/test_predictions.py
+
+# ── Pitch deck / presentation files (keep locally, don't push) ────────────────
+*.pptx
+SentinelAI_PitchDeck.pdf
+
+# ── Dataset files (keep locally, don't push) ──────────────────────────────────
+data/*.csv
+*.csv
+!requirements.txt
