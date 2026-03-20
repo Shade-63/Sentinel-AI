@@ -176,7 +176,7 @@ Sentinel/
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/YOUR_USERNAME/Sentinel.git
+git clone https://github.com/Shade-63/Sentinel.git
 cd Sentinel
 ```
 
@@ -208,7 +208,7 @@ models/sentinel_model/model.safetensors
 
 **Option B — HuggingFace Hub** *(coming soon)*
 ```bash
-# huggingface-cli download YOUR_USERNAME/sentinel-model --local-dir models/sentinel_model
+# huggingface-cli download Shade-63/sentinel-model --local-dir models/sentinel_model
 ```
 
 ### 5. Run the application
