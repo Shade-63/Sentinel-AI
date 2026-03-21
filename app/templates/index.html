@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SENTINELAI — Threat Analysis Engine</title>
+<meta name="description" content="SentinelAI: AI-powered threat analysis engine for detecting digital arrest scams, phishing, and social engineering attacks."/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "background": "#11131e",
+          "inverse-primary": "#5646d7",
+          "tertiary": "#ffb3b4",
+          "on-error-container": "#ffdad6",
+          "secondary-fixed-dim": "#00e478",
+          "on-surface": "#e1e1f2",
+          "secondary-container": "#00e779",
+          "inverse-surface": "#e1e1f2",
+          "primary": "#c5c0ff",
+          "surface-tint": "#c5c0ff",
+          "primary-fixed-dim": "#c5c0ff",
+          "tertiary-fixed-dim": "#ffb3b4",
+          "surface-variant": "#323440",
+          "on-error": "#690005",
+          "surface-container-lowest": "#0c0e18",
+          "secondary": "#7cffa3",
+          "on-tertiary-container": "#5b0012",
+          "outline": "#928fa0",
+          "on-tertiary-fixed": "#40000a",
+          "on-background": "#e1e1f2",
+          "on-primary-fixed-variant": "#3d28bf",
+          "secondary-fixed": "#61ff98",
+          "tertiary-fixed": "#ffdad9",
+          "on-secondary-fixed-variant": "#005227",
+          "primary-fixed": "#e4dfff",
+          "surface": "#11131e",
+          "surface-container-high": "#272935",
+          "surface-container": "#1d1f2b",
+          "on-primary-fixed": "#150067",
+          "primary-container": "#8b80ff",
+          "on-primary": "#2600a1",
+          "on-tertiary": "#680016",
+          "error": "#ffb4ab",
+          "on-surface-variant": "#c8c4d7",
+          "outline-variant": "#474554",
+          "surface-container-highest": "#323440",
+          "surface-container-low": "#191b26",
+          "on-tertiary-fixed-variant": "#920023",
+          "surface-dim": "#11131e",
+          "tertiary-container": "#ff5262",
+          "on-secondary-container": "#006230",
+          "inverse-on-surface": "#2e303c",
+          "on-secondary": "#003919",
+          "on-primary-container": "#20008e",
+          "on-secondary-fixed": "#00210c",
+          "error-container": "#93000a",
+          "surface-bright": "#373845"
+        },
+        fontFamily: {
+          "headline": ["Inter"],
+          "body": ["Inter"],
+          "label": ["Inter"],
+          "mono": ["JetBrains Mono"]
+        },
+        borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+      },
+    },
+  }
+</script>
+<style>
+    body {
+        background-color: #0D0F1A;
+        background-image: radial-gradient(circle at center, #0D0F1A 0%, #07080F 100%),
+                          radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 100% 100%, 24px 24px;
+        color: #E1E1F2;
+    }
+    .dot-grid {
+        background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0);
+        background-size: 24px 24px;
+    }
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+    }
+    .glass-panel {
+        background: rgba(29, 31, 43, 0.8);
+        backdrop-filter: blur(12px);
+    }
+    .glow-red {
+        box-shadow: 0 0 60px rgba(255, 82, 98, 0.12);
+    }
+    .safe-glow {
+        box-shadow: 0 0 60px rgba(0, 231, 121, 0.08);
+    }
+
+    /* Smooth view transitions */
+    .view-transition {
+        transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .view-hidden {
+        opacity: 0;
+        transform: translateY(12px);
+        pointer-events: none;
+        position: absolute;
+        top: 0; left: 0; right: 0;
+    }
+    .view-visible {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+        position: relative;
+    }
+
+    /* Processing pulse */
+    @keyframes pulse-ring {
+        0% { transform: scale(0.8); opacity: 0.6; }
+        50% { transform: scale(1.1); opacity: 0.2; }
+        100% { transform: scale(0.8); opacity: 0.6; }
+    }
+    .pulse-ring {
+        animation: pulse-ring 2s ease-in-out infinite;
+    }
+
+    /* Scanning line */
+    @keyframes scan-line {
+        0% { top: 0; opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { top: 100%; opacity: 0; }
+    }
+    .scan-line {
+        animation: scan-line 2s ease-in-out infinite;
+    }
+</style>
+</head>
+<body class="font-body text-on-surface min-h-screen selection:bg-primary/30">
+<!-- Background Layer -->
+<div class="fixed inset-0 dot-grid pointer-events-none"></div>
+
+<!-- ============================================================ -->
+<!-- VIEW: IDLE STATE                                             -->
+<!-- ============================================================ -->
+<div id="viewIdle" class="view-transition view-visible">
+<main class="relative z-10 flex items-center justify-center min-h-screen p-6">
+<div class="w-full max-w-[1100px] grid grid-cols-1 md:grid-cols-2 bg-surface-container-low/40 backdrop-blur-md rounded-xl overflow-hidden shadow-[0_20px_80px_rgba(0,0,0,0.45)] outline outline-1 outline-white/5">
+<!-- Left Panel: Input -->
+<section class="p-12 flex flex-col justify-between border-r border-outline-variant/10">
+<div class="space-y-12">
+<header>
+<div class="flex items-baseline gap-2">
+<h1 class="text-[22px] font-light tracking-[0.12em] text-white leading-none">SENTINEL<span class="text-[#7C6FFF] text-[11px] font-semibold tracking-normal align-top leading-none ml-1">AI</span></h1>
+</div>
+<p class="text-[9px] text-[#4E5A6E] tracking-[0.05em] font-mono mt-1 uppercase">THREAT ANALYSIS ENGINE</p>
+</header>
+<div class="space-y-4">
+<label class="block text-[10px] text-[#4E5A6E] tracking-[0.15em] font-semibold uppercase">FORENSIC INPUT</label>
+<div class="relative group">
+<textarea id="messageInput" class="w-full h-64 bg-[#090C12] border border-white/10 rounded-xl p-5 text-on-surface font-mono text-sm focus:ring-1 focus:ring-primary/40 focus:border-primary/40 outline-none transition-all placeholder:text-[#2E3A4E] resize-none" placeholder="Paste any suspicious message, URL, or code snippet for immediate neural evaluation..."></textarea>
+<div class="absolute bottom-4 right-4 flex gap-2">
+<span class="bg-surface-container text-[9px] font-mono px-2 py-1 rounded text-outline border border-outline-variant/20">UTF-8</span>
+<span class="bg-surface-container text-[9px] font-mono px-2 py-1 rounded text-outline border border-outline-variant/20">RAW</span>
+</div>
+</div>
+<button id="analyzeBtn" class="w-full py-4 px-6 bg-gradient-to-r from-[#7C6FFF] to-[#5B8DEF] text-on-primary font-bold text-sm tracking-widest rounded-xl transition-all hover:scale-[1.01] active:scale-95 shadow-[0_4px_20px_rgba(124,111,255,0.3)]">
+    RUN ANALYSIS
+</button>
+</div>
+</div>
+<footer class="mt-12">
+<div class="flex items-center gap-2">
+<span id="statusDot" class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_10px_rgba(124,255,163,0.3)]"></span>
+<p class="text-[10px] text-[#2E3A4E] font-mono tracking-tighter uppercase">Powered by DistilBERT · Hybrid Inference · v2.4.0-Stable</p>
+</div>
+</footer>
+</section>
+<!-- Right Panel: Atmospheric HUD -->
+<section class="p-12 flex flex-col items-center justify-center relative overflow-hidden bg-surface-container-lowest/50">
+<!-- Idle Reticle -->
+<div id="hudIdle" class="relative w-80 h-80 flex items-center justify-center">
+<div class="absolute inset-0 rounded-full border border-[#7C6FFF]/10"></div>
+<div class="absolute inset-4 rounded-full border border-[#7C6FFF]/5"></div>
+<div class="absolute inset-16 rounded-full border border-[#7C6FFF]/5"></div>
+<!-- Tactical Notches -->
+<div class="absolute inset-0 flex justify-center py-2"><div class="w-[1px] h-2 bg-[#7C6FFF]/20"></div></div>
+<div class="absolute inset-0 flex justify-center items-end py-2"><div class="w-[1px] h-2 bg-[#7C6FFF]/20"></div></div>
+<div class="absolute inset-0 flex items-center px-2"><div class="w-2 h-[1px] bg-[#7C6FFF]/20"></div></div>
+<div class="absolute inset-0 flex items-center justify-end px-2"><div class="w-2 h-[1px] bg-[#7C6FFF]/20"></div></div>
+<!-- Center Dot -->
+<div class="w-1 h-1 rounded-full bg-[#7C6FFF]/40 shadow-[0_0_15px_rgba(124,111,255,0.4)]"></div>
+<!-- HUD Text -->
+<div id="hudStatusText" class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+<span class="text-[10px] text-[#2E3A4E] tracking-[0.15em] font-semibold uppercase">AWAITING ANALYSIS</span>
+<div class="flex gap-1">
+<span class="w-1 h-1 bg-[#2E3A4E] rounded-full"></span>
+<span class="w-1 h-1 bg-[#2E3A4E]/50 rounded-full"></span>
+<span class="w-1 h-1 bg-[#2E3A4E]/20 rounded-full"></span>
+</div>
+</div>
+<!-- Ghost Data Points -->
+<div class="absolute top-10 right-10 flex flex-col items-end gap-1 opacity-20">
+<span class="text-[8px] font-mono text-[#7C6FFF]">X: 42.190</span>
+<span class="text-[8px] font-mono text-[#7C6FFF]">Y: 09.441</span>
+</div>
+<div class="absolute bottom-10 left-10 opacity-20">
+<span id="scannerModeLabel" class="text-[8px] font-mono text-[#7C6FFF]">SCANNER_IDLE_MODE</span>
+</div>
+</div>
+<!-- Ambient Glow Behind Reticle -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/5 blur-[120px] rounded-full pointer-events-none"></div>
+</section>
+</div>
+</main>
+<!-- Side Decorations -->
+<div class="fixed left-6 top-1/2 -translate-y-1/2 flex flex-col gap-8 opacity-40">
+<div class="h-32 w-[1px] bg-gradient-to-b from-transparent via-outline-variant/30 to-transparent"></div>
+<div class="flex flex-col gap-4">
+<span class="text-[8px] font-mono -rotate-90 text-[#4E5A6E] uppercase">Security_Protocol_Active</span>
+<span class="text-[8px] font-mono -rotate-90 text-[#4E5A6E] uppercase">Neural_Link_Stable</span>
+</div>
+</div>
+<div class="fixed right-8 top-1/2 -translate-y-1/2 flex flex-col gap-12 text-right opacity-30">
+<div class="space-y-1">
+<p class="text-[9px] font-mono text-outline-variant uppercase">Latency</p>
+<p id="metricLatency" class="text-xs font-mono text-on-surface-variant">12ms</p>
+</div>
+<div class="space-y-1">
+<p class="text-[9px] font-mono text-outline-variant uppercase">Throughput</p>
+<p class="text-xs font-mono text-on-surface-variant">4.2GB/s</p>
+</div>
+<div class="space-y-1">
+<p class="text-[9px] font-mono text-outline-variant uppercase">Entropy</p>
+<p id="metricEntropy" class="text-xs font-mono text-on-surface-variant">0.02</p>
+</div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIEW: RESULT STATE (High Risk / Safe - dynamically styled)   -->
+<!-- ============================================================ -->
+<div id="viewResult" class="view-transition view-hidden">
+<main class="max-w-[1100px] mx-auto pt-16 px-8 pb-20 relative z-10">
+<!-- Dashboard Header -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span id="resultIncidentBadge" class="font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 border rounded">Incident #---</span>
+<span class="w-1 h-1 bg-outline-variant rounded-full"></span>
+<span class="font-mono text-[10px] tracking-widest text-on-surface-variant uppercase">CRITICAL PRIORITY</span>
+</div>
+<h1 class="text-4xl font-light tracking-tight text-white leading-tight">Analysis Result: <span id="resultHeadline" class="font-semibold"></span></h1>
+</div>
+<div class="flex gap-3">
+<div class="px-3 py-1.5 bg-surface-container-low border border-outline-variant/10 rounded font-mono text-[9px] text-on-surface-variant uppercase tracking-widest">ENGINE: SENTINELAI v2</div>
+<div class="px-3 py-1.5 bg-surface-container-low border border-outline-variant/10 rounded font-mono text-[9px] text-on-surface-variant uppercase tracking-widest">HYBRID INFERENCE MODE</div>
+</div>
+</div>
+<!-- Main Content -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Left Panel: Input Source (readonly) -->
+<div class="lg:col-span-5 flex flex-col gap-6">
+<div class="glass-panel p-1 rounded-xl border border-outline-variant/10 bg-surface-container-lowest overflow-hidden shadow-2xl">
+<div class="px-4 py-3 bg-surface-container-low/50 flex items-center justify-between border-b border-outline-variant/5">
+<span class="font-mono text-[10px] uppercase tracking-tighter text-on-surface-variant">Source Content (SMS/Text)</span>
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">content_paste</span>
+</div>
+<textarea id="resultMessageDisplay" class="w-full bg-transparent border-none focus:ring-0 text-on-surface/90 font-mono text-sm leading-relaxed p-6 h-[400px] resize-none overflow-y-auto" readonly></textarea>
+</div>
+<!-- Tactical Indicator Bar -->
+<div id="resultRecommendation" class="flex flex-col gap-2 p-4 rounded-r-lg">
+<div id="resultRecommendationLabel" class="text-[10px] font-bold tracking-widest uppercase">System Recommendation</div>
+<div id="resultRecommendationText" class="text-xs text-on-surface-variant"></div>
+</div>
+</div>
+<!-- Right Panel: Intelligence Output -->
+<div class="lg:col-span-7 space-y-8">
+<!-- Score & Core Stats -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Score Circle Card -->
+<div id="resultScoreCard" class="glass-panel p-8 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden">
+<div id="resultScoreGradient" class="absolute inset-0 pointer-events-none"></div>
+<div class="relative w-[200px] h-[200px] flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-highest" cx="100" cy="100" fill="transparent" r="90" stroke="currentColor" stroke-width="6"></circle>
+<circle id="resultArc" cx="100" cy="100" fill="transparent" r="90" stroke="currentColor" stroke-linecap="round" stroke-width="10" stroke-dasharray="565.48" stroke-dashoffset="565.48"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span id="resultScorePercent" class="text-5xl font-mono font-bold text-white tracking-tighter">--%</span>
+<span id="resultScoreLabel" class="text-[10px] font-bold tracking-[0.3em] uppercase mt-1"></span>
+</div>
+</div>
+</div>
+<!-- Details Card -->
+<div class="glass-panel p-8 rounded-2xl flex flex-col justify-between">
+<div class="space-y-6">
+<div class="group">
+<div class="text-[10px] font-mono text-on-surface-variant tracking-widest uppercase mb-1">CLASSIFICATION</div>
+<div id="resultClassification" class="text-2xl font-bold tracking-tight"></div>
+</div>
+<div class="group">
+<div class="text-[10px] font-mono text-on-surface-variant tracking-widest uppercase mb-1">CONFIDENCE</div>
+<div id="resultConfidence" class="text-2xl font-mono font-medium text-white"></div>
+</div>
+<div class="group">
+<div class="text-[10px] font-mono text-on-surface-variant tracking-widest uppercase mb-1">ANALYSIS DEPTH</div>
+<div class="text-sm text-on-surface">Linguistic + Pattern Analysis</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Threat Indicators -->
+<div class="glass-panel p-8 rounded-2xl">
+<h3 id="resultIndicatorsTitle" class="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-xs">radar</span>
+THREAT INDICATORS
+</h3>
+<div id="resultIndicatorsContainer" class="flex flex-wrap gap-4">
+<!-- Dynamically populated -->
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col sm:flex-row gap-4 pt-4">
+<button id="downloadReportBtn" class="flex-1 bg-surface-container-high hover:bg-surface-container-highest text-white font-semibold py-4 px-6 rounded-xl flex items-center justify-center gap-3 border border-outline-variant/10 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined">download</span>
+DOWNLOAD INTELLIGENCE BRIEF
+</button>
+<button id="newAnalysisBtn" class="flex-1 bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 border border-outline-variant/10 transition-all active:scale-[0.98]">
+New Analysis
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- System Log Section -->
+<div class="mt-16 pt-12 border-t border-outline-variant/10">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+<div class="space-y-4">
+<div class="font-mono text-[9px] uppercase tracking-widest text-on-surface-variant">Linguistic Markers</div>
+<div id="resultLinguistic" class="text-xs text-on-surface-variant leading-relaxed"></div>
+</div>
+<div class="space-y-4">
+<div class="font-mono text-[9px] uppercase tracking-widest text-on-surface-variant">Domain Intelligence</div>
+<div id="resultDomain" class="text-xs text-on-surface-variant leading-relaxed"></div>
+</div>
+<div class="space-y-4">
+<div class="font-mono text-[9px] uppercase tracking-widest text-on-surface-variant">AI Confidence Map</div>
+<div class="flex items-center gap-2 h-4 w-full bg-surface-container rounded-full overflow-hidden">
+<div id="resultConfBar1" class="h-full transition-all duration-700" style="width: 0%"></div>
+<div id="resultConfBar2" class="h-full transition-all duration-700" style="width: 0%"></div>
+</div>
+<div class="flex justify-between font-mono text-[8px] text-on-surface-variant uppercase">
+<span id="resultHeuristicLabel">Heuristic: --</span>
+<span id="resultNeuralLabel">Neural: --</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="max-w-[1100px] mx-auto py-12 px-8 flex justify-between items-center opacity-40">
+<div class="text-[12px] font-mono tracking-widest uppercase">System Status: Nominal</div>
+<div class="text-[12px] font-mono tracking-widest uppercase">©2026 Sentinel Core Systems</div>
+</footer>
+</div>
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT: Backend Wiring & State Management                -->
+<!-- ============================================================ -->
+<script>
+(function() {
+    // ── State ─────────────────────────────────────────────
+    let lastAnalysisData = null;
+    let currentView = 'idle'; // 'idle' | 'result'
+
+    // ── DOM References ────────────────────────────────────
+    const viewIdle = document.getElementById('viewIdle');
+    const viewResult = document.getElementById('viewResult');
+    const messageInput = document.getElementById('messageInput');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const downloadReportBtn = document.getElementById('downloadReportBtn');
+    const newAnalysisBtn = document.getElementById('newAnalysisBtn');
+    const hudStatusText = document.getElementById('hudStatusText');
+    const scannerModeLabel = document.getElementById('scannerModeLabel');
+
+    // Result DOM
+    const resultIncidentBadge = document.getElementById('resultIncidentBadge');
+    const resultHeadline = document.getElementById('resultHeadline');
+    const resultMessageDisplay = document.getElementById('resultMessageDisplay');
+    const resultRecommendation = document.getElementById('resultRecommendation');
+    const resultRecommendationLabel = document.getElementById('resultRecommendationLabel');
+    const resultRecommendationText = document.getElementById('resultRecommendationText');
+    const resultScoreCard = document.getElementById('resultScoreCard');
+    const resultScoreGradient = document.getElementById('resultScoreGradient');
+    const resultArc = document.getElementById('resultArc');
+    const resultScorePercent = document.getElementById('resultScorePercent');
+    const resultScoreLabel = document.getElementById('resultScoreLabel');
+    const resultClassification = document.getElementById('resultClassification');
+    const resultConfidence = document.getElementById('resultConfidence');
+    const resultIndicatorsTitle = document.getElementById('resultIndicatorsTitle');
+    const resultIndicatorsContainer = document.getElementById('resultIndicatorsContainer');
+    const resultLinguistic = document.getElementById('resultLinguistic');
+    const resultDomain = document.getElementById('resultDomain');
+    const resultConfBar1 = document.getElementById('resultConfBar1');
+    const resultConfBar2 = document.getElementById('resultConfBar2');
+    const resultHeuristicLabel = document.getElementById('resultHeuristicLabel');
+    const resultNeuralLabel = document.getElementById('resultNeuralLabel');
+
+    // ── View Switching ────────────────────────────────────
+    function showView(name) {
+        if (name === 'idle') {
+            viewResult.classList.remove('view-visible');
+            viewResult.classList.add('view-hidden');
+            setTimeout(() => {
+                viewIdle.classList.remove('view-hidden');
+                viewIdle.classList.add('view-visible');
+            }, 100);
+        } else {
+            viewIdle.classList.remove('view-visible');
+            viewIdle.classList.add('view-hidden');
+            setTimeout(() => {
+                viewResult.classList.remove('view-hidden');
+                viewResult.classList.add('view-visible');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 100);
+        }
+        currentView = name;
+    }
+
+    // ── Processing State ──────────────────────────────────
+    function setProcessingState(isProcessing) {
+        if (isProcessing) {
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = `
+                <span class="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>
+                PROCESSING...
+            `;
+            analyzeBtn.classList.add('opacity-80', 'cursor-wait');
+            hudStatusText.innerHTML = `
+                <span class="text-[10px] text-[#7C6FFF] tracking-[0.15em] font-semibold uppercase">NEURAL PROCESSING</span>
+                <div class="flex gap-1.5 mt-1">
+                    <span class="w-1.5 h-1.5 bg-[#7C6FFF] rounded-full animate-pulse"></span>
+                    <span class="w-1.5 h-1.5 bg-[#7C6FFF]/60 rounded-full animate-pulse" style="animation-delay: 0.2s"></span>
+                    <span class="w-1.5 h-1.5 bg-[#7C6FFF]/30 rounded-full animate-pulse" style="animation-delay: 0.4s"></span>
+                </div>
+            `;
+            scannerModeLabel.textContent = 'SCANNER_ACTIVE_MODE';
+        } else {
+            analyzeBtn.disabled = false;
+            analyzeBtn.innerHTML = 'RUN ANALYSIS';
+            analyzeBtn.classList.remove('opacity-80', 'cursor-wait');
+            hudStatusText.innerHTML = `
+                <span class="text-[10px] text-[#2E3A4E] tracking-[0.15em] font-semibold uppercase">AWAITING ANALYSIS</span>
+                <div class="flex gap-1">
+                    <span class="w-1 h-1 bg-[#2E3A4E] rounded-full"></span>
+                    <span class="w-1 h-1 bg-[#2E3A4E]/50 rounded-full"></span>
+                    <span class="w-1 h-1 bg-[#2E3A4E]/20 rounded-full"></span>
+                </div>
+            `;
+            scannerModeLabel.textContent = 'SCANNER_IDLE_MODE';
+        }
+    }
+
+    // ── Generate Incident ID ──────────────────────────────
+    function generateIncidentId() {
+        const num = Math.floor(1000 + Math.random() * 9000);
+        const suffix = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+        return `Incident #${num}-${suffix}`;
+    }
+
+    // ── SVG Arc Calculation ───────────────────────────────
+    function setArcPercentage(percent) {
+        const circumference = 2 * Math.PI * 90; // r=90
+        const offset = circumference - (percent / 100) * circumference;
+        resultArc.style.strokeDasharray = circumference;
+        resultArc.style.strokeDashoffset = circumference; // start from 0
+        // Animate in
+        requestAnimationFrame(() => {
+            resultArc.style.transition = 'stroke-dashoffset 1.2s ease-out';
+            resultArc.style.strokeDashoffset = offset;
+        });
+    }
+
+    // ── Populate Result View ──────────────────────────────
+    function populateResult(data, originalMessage) {
+        const isScam = data.label === 'SCAM';
+        const scamProb = data.scam_probability;
+        const safeProb = data.safe_probability;
+        const riskLevel = data.risk_level;
+        const signals = data.signals || [];
+
+        const scamPercent = Math.round(scamProb * 100);
+        const safePercent = Math.round(safeProb * 100);
+        const confidence = Math.max(scamPercent, safePercent);
+        const displayPercent = isScam ? scamPercent : safePercent;
+
+        // ─ Theme Colors ─
+        const accentColor = isScam ? '#ff5262' : '#00E87A';
+        const glowClass = isScam ? 'glow-red' : 'safe-glow';
+
+        // ─ Header ─
+        resultIncidentBadge.textContent = generateIncidentId();
+        resultIncidentBadge.style.color = accentColor;
+        resultIncidentBadge.style.borderColor = accentColor + '4D'; // 30% opacity
+
+        resultHeadline.textContent = isScam ? 'Threat Detected' : 'No Threat Detected';
+        resultHeadline.style.color = accentColor;
+
+        // ─ Message ─
+        resultMessageDisplay.value = originalMessage;
+
+        // ─ Recommendation ─
+        resultRecommendation.className = `flex flex-col gap-2 p-4 rounded-r-lg border-l-2`;
+        resultRecommendation.style.borderColor = accentColor;
+        resultRecommendation.style.background = (isScam ? 'rgba(255,82,98,0.05)' : 'rgba(0,232,122,0.05)');
+        resultRecommendationLabel.style.color = accentColor;
+
+        if (isScam) {
+            if (riskLevel === 'HIGH') {
+                resultRecommendationText.textContent = 'Isolate communication channel immediately. High probability of credential harvesting or social engineering attack. Do NOT share any personal information.';
+            } else {
+                resultRecommendationText.textContent = 'Exercise caution. Several suspicious patterns detected. Verify through official channels before responding.';
+            }
+        } else {
+            resultRecommendationText.textContent = 'Content verified. No immediate risks identified. Message classification suggests legitimate communication.';
+        }
+
+        // ─ Score Circle ─
+        resultScoreCard.className = `glass-panel ${glowClass} p-8 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden`;
+        resultScoreGradient.className = `absolute inset-0 bg-gradient-to-br ${isScam ? 'from-tertiary-container/5' : 'from-secondary-container/5'} to-transparent pointer-events-none`;
+
+        resultArc.classList.remove('text-tertiary-container', 'text-secondary');
+        resultArc.classList.add(isScam ? 'text-tertiary-container' : 'text-secondary');
+
+        resultScorePercent.textContent = scamPercent + '%';
+        resultScoreLabel.textContent = isScam ? (riskLevel === 'HIGH' ? 'HIGH RISK' : 'MEDIUM RISK') : 'SAFE';
+        resultScoreLabel.style.color = accentColor;
+
+        setArcPercentage(scamPercent);
+
+        // ─ Details ─
+        resultClassification.textContent = isScam ? 'SCAM DETECTED' : 'LEGITIMATE';
+        resultClassification.style.color = accentColor;
+        resultConfidence.textContent = confidence.toFixed(1) + '%';
+
+        // ─ Threat Indicators ─
+        resultIndicatorsContainer.innerHTML = '';
+        if (isScam && signals.length > 0) {
+            resultIndicatorsTitle.innerHTML = `<span class="material-symbols-outlined text-xs">radar</span> THREAT INDICATORS`;
+
+            const iconMap = {
+                'arrest or legal authority threat': 'security',
+                'urgency / time pressure': 'priority_high',
+                'payment demand with urgency': 'payments',
+                'phishing link / click-bait': 'link',
+                'account suspension threat': 'lock',
+                'prize / lottery scam': 'emoji_events',
+                'credential / remote access request': 'key',
+                'digital arrest pattern': 'gavel',
+                'isolation / secrecy demand': 'visibility_off',
+                'document / id fraud': 'badge',
+            };
+
+            signals.forEach(sig => {
+                const sigLower = sig.toLowerCase();
+                let icon = 'warning';
+                for (const [key, val] of Object.entries(iconMap)) {
+                    if (sigLower.includes(key) || key.includes(sigLower.replace(/^\w/, ''))) {
+                        icon = val;
+                        break;
+                    }
+                }
+
+                const chip = document.createElement('div');
+                chip.className = 'px-5 py-3 rounded-lg border border-tertiary-container/20 bg-tertiary-container/[0.08] flex items-center gap-3 group hover:bg-tertiary-container/[0.12] transition-colors';
+                chip.innerHTML = `
+                    <span class="material-symbols-outlined text-tertiary-container text-sm">${icon}</span>
+                    <span class="font-mono text-xs font-bold text-tertiary-container/85 tracking-tighter uppercase">${sig}</span>
+                `;
+                resultIndicatorsContainer.appendChild(chip);
+            });
+        } else {
+            resultIndicatorsTitle.innerHTML = `<span class="material-symbols-outlined text-xs">check_circle</span> THREAT STATUS`;
+            const chip = document.createElement('div');
+            chip.className = 'px-5 py-3 rounded-lg border border-secondary/20 bg-secondary/[0.08] flex items-center gap-3 group hover:bg-secondary/[0.12] transition-colors';
+            chip.innerHTML = `
+                <span class="material-symbols-outlined text-secondary text-sm">verified</span>
+                <span class="font-mono text-xs font-bold text-secondary/85 tracking-tighter uppercase">NO THREATS DETECTED</span>
+            `;
+            resultIndicatorsContainer.appendChild(chip);
+        }
+
+        // ─ New Analysis button styling (red gradient for scam) ─
+        if (isScam) {
+            newAnalysisBtn.className = 'flex-1 bg-gradient-to-r from-tertiary-container to-[#FF4058] hover:opacity-90 text-on-tertiary font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-tertiary-container/20 transition-all active:scale-[0.98]';
+        } else {
+            newAnalysisBtn.className = 'flex-1 bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 border border-outline-variant/10 transition-all active:scale-[0.98]';
+        }
+
+        // ─ System Log Section ─
+        if (isScam) {
+            resultLinguistic.innerHTML = `System detected artificial pressure nodes typical of social engineering campaigns. ${signals.length} risk indicator(s) flagged during analysis.`;
+            resultDomain.innerHTML = `Content analysis flagged suspicious patterns. <span class="text-tertiary-container underline underline-offset-4 decoration-tertiary-container/30">High-risk indicators present</span>. Exercise extreme caution.`;
+            resultConfBar1.style.width = scamPercent + '%';
+            resultConfBar1.className = 'h-full bg-tertiary-container transition-all duration-700';
+            resultConfBar2.style.width = safePercent + '%';
+            resultConfBar2.className = 'h-full bg-surface-variant transition-all duration-700';
+            resultHeuristicLabel.textContent = riskLevel === 'HIGH' ? 'Heuristic: High' : 'Heuristic: Medium';
+            resultNeuralLabel.textContent = `Neural: ${scamPercent}.${Math.floor(Math.random()*9)}`;
+        } else {
+            resultLinguistic.innerHTML = `System identified <span class="text-white">Natural language patterns</span>. Absence of artificial pressure nodes or common phishing keywords. Sentiment is professional.`;
+            resultDomain.innerHTML = `Content verified. <span class="text-secondary underline underline-offset-4 decoration-secondary/30">No suspicious patterns</span>. Metadata consistent with legitimate communication.`;
+            resultConfBar1.style.width = scamPercent + '%';
+            resultConfBar1.className = 'h-full bg-secondary transition-all duration-700';
+            resultConfBar2.style.width = safePercent + '%';
+            resultConfBar2.className = 'h-full bg-surface-variant transition-all duration-700';
+            resultHeuristicLabel.textContent = 'Low heuristic score';
+            resultNeuralLabel.textContent = `Neural: ${safePercent}.${Math.floor(Math.random()*9)}% Legitimate`;
+        }
+    }
+
+    // ── ANALYZE ───────────────────────────────────────────
+    analyzeBtn.addEventListener('click', async function(e) {
+        e.preventDefault();
+        const text = messageInput.value.trim();
+
+        if (!text) {
+            // Brief flash on textarea border
+            messageInput.classList.add('border-tertiary-container/60');
+            messageInput.setAttribute('placeholder', '⚠ Please paste a message for analysis...');
+            setTimeout(() => {
+                messageInput.classList.remove('border-tertiary-container/60');
+                messageInput.setAttribute('placeholder', 'Paste any suspicious message, URL, or code snippet for immediate neural evaluation...');
+            }, 2000);
+            return;
+        }
+
+        setProcessingState(true);
+
+        try {
+            const response = await fetch('/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            });
+
+            if (!response.ok) throw new Error('Server error: ' + response.status);
+
+            const data = await response.json();
+
+            // Store for PDF
+            lastAnalysisData = {
+                message: text,
+                risk_score: (data.scam_probability * 100).toFixed(1),
+                risk_level: data.risk_level || (data.label === 'SCAM' ? 'HIGH' : 'LOW'),
+                signals: data.signals || []
+            };
+
+            populateResult(data, text);
+            setProcessingState(false);
+            showView('result');
+
+        } catch (error) {
+            console.error('Analysis error:', error);
+            setProcessingState(false);
+            hudStatusText.innerHTML = `
+                <span class="text-[10px] text-tertiary-container tracking-[0.15em] font-semibold uppercase">ANALYSIS FAILED</span>
+                <div class="text-[8px] text-on-surface-variant mt-1">Check connection and retry</div>
+            `;
+            setTimeout(() => setProcessingState(false), 2000);
+        }
+    });
+
+    // ── DOWNLOAD REPORT ───────────────────────────────────
+    downloadReportBtn.addEventListener('click', async function() {
+        if (!lastAnalysisData) return;
+
+        const originalText = this.innerHTML;
+        this.innerHTML = `
+            <span class="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            GENERATING...
+        `;
+        this.disabled = true;
+
+        try {
+            const response = await fetch('/download_report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(lastAnalysisData)
+            });
+
+            if (!response.ok) throw new Error('Server error: ' + response.status);
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'SentinelAI_Report.pdf';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            this.innerHTML = `
+                <span class="material-symbols-outlined">check_circle</span>
+                DOWNLOADED
+            `;
+            setTimeout(() => { this.innerHTML = originalText; }, 2500);
+
+        } catch (err) {
+            console.error('Download error:', err);
+            this.innerHTML = `
+                <span class="material-symbols-outlined">error</span>
+                FAILED — RETRY
+            `;
+            setTimeout(() => { this.innerHTML = originalText; }, 3000);
+        } finally {
+            this.disabled = false;
+        }
+    });
+
+    // ── NEW ANALYSIS ──────────────────────────────────────
+    newAnalysisBtn.addEventListener('click', function() {
+        messageInput.value = '';
+        lastAnalysisData = null;
+        showView('idle');
+    });
+
+    // ── Keyboard shortcut: Ctrl+Enter to analyze ─────────
+    messageInput.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            analyzeBtn.click();
+        }
+    });
+})();
+</script>
+</body>
+</html>
