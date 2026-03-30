@@ -1,12 +1,3 @@
----
-title: SentinelAI
-emoji: 🛡️
-colorFrom: blue
-colorTo: red
-sdk: docker
-pinned: false
----
-
 <div align="center">
 
 # 🛡️ SentinelAI
@@ -403,3 +394,4 @@ SentinelAI provides AI-based probabilistic risk estimation and does **not** cons
 *Protecting innocents from digital threats through AI-powered intelligence*
 
 </div>
+
