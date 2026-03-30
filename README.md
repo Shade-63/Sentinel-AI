@@ -1,3 +1,12 @@
+---
+title: SentinelAI
+emoji: 🛡️
+colorFrom: blue
+colorTo: red
+sdk: docker
+pinned: false
+---
+
 <div align="center">
 
 # 🛡️ SentinelAI
