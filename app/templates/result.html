@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analysis Result - SentinelAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-white min-h-screen flex items-center justify-center">
+
+<div class="w-full max-w-2xl p-8 bg-gray-900 rounded-2xl shadow-2xl">
+
+    <h1 class="text-2xl font-bold mb-4 text-center">
+        Analysis Result
+    </h1>
+
+    <div class="mb-6">
+        <p class="text-gray-400 mb-2">Input Message:</p>
+        <div class="bg-gray-800 p-4 rounded-lg text-sm">
+            {{ message }}
+        </div>
+    </div>
+
+    <div class="text-center mb-6">
+        {% if label == "SCAM" %}
+            <div class="text-red-500 text-3xl font-bold">⚠ HIGH RISK</div>
+        {% else %}
+            <div class="text-green-500 text-3xl font-bold">✔ SAFE</div>
+        {% endif %}
+    </div>
+
+    <div class="space-y-3">
+        <p>Scam Probability: <span class="font-bold text-red-400">{{ scam_prob }}</span></p>
+        <p>Safe Probability: <span class="font-bold text-green-400">{{ safe_prob }}</span></p>
+    </div>
+
+    <a href="/" class="block mt-6 text-center text-blue-400 hover:underline">
+        Analyze Another Message
+    </a>
+
+</div>
+
+</body>
+</html>
