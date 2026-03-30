@@ -1,14 +1,10 @@
-# ── 1. Base image — slim Python 3.11 on Linux
+# -- 1. Base image -- slim Python 3.11 on Linux
 FROM python:3.11-slim
 
-# ── 2. Set working directory inside the container
+# -- 2. Set working directory inside the container
 WORKDIR /app
 
-# ── 3. Install system dependencies
-#    gcc        → needed to compile some Python packages
-#    tesseract-ocr     → the OCR binary (what pytesseract wraps)
-#    tesseract-ocr-eng → English language data pack for Tesseract
-#    libglib2.0-0      → required by Pillow for image processing
+# -- 3. Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
     tesseract-ocr \
@@ -16,21 +12,20 @@ RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# ── 4. Copy requirements first (Docker caching trick —
-#    if requirements.txt hasn't changed, this layer is cached
-#    and pip install doesn't re-run on every build)
+# -- 4. Copy requirements first (Docker layer caching)
 COPY requirements.txt .
 
-# ── 5. Install Python dependencies
+# -- 5. Install PyTorch CPU-only FIRST (much smaller, ~200MB vs 2GB)
+RUN pip install --no-cache-dir torch==2.2.2+cpu --index-url https://download.pytorch.org/whl/cpu
+
+# -- 6. Install remaining Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ── 6. Copy the entire project into the container
+# -- 7. Copy the entire project into the container
 COPY . .
 
-# ── 7. HuggingFace Spaces requires port 7860
+# -- 8. HuggingFace Spaces requires port 7860
 EXPOSE 7860
 
-# ── 8. Tell the container how to start your app
-#    The 0.0.0.0 host is critical — without it the app
-#    only listens inside the container and HF can't reach it
+# -- 9. Start the app
 CMD ["python", "app/app.py"]
