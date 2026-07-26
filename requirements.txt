@@ -1,9 +1,13 @@
+# ── Production dependencies (app runtime only) ────────────────────────────────
 Flask==3.0.3
+torch==2.2.2
 transformers==4.40.2
-scikit-learn==1.4.2
-pandas==2.2.2
-reportlab==4.1.0
-datasets==2.19.1
 numpy==1.26.4
+reportlab==4.1.0
 pytesseract==0.3.13
 Pillow==10.3.0
+
+# ── Dev / Training only (not needed by the running app) ───────────────────────
+# pandas==2.2.2
+# scikit-learn==1.4.2
+# datasets==2.19.1

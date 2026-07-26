@@ -38,26 +38,9 @@ The system features:
 
 ---
 
-## 🖥️ Screenshots
+## 🖥️ UI Preview
 
-### Idle State — Forensic Input Console
-> Two-panel HUD layout: paste a suspicious message and run neural analysis.
-
-![Idle State](assets/screenshots/idle_state.png)
-
----
-
-### Threat Detected — High Risk Result (99% Scam Probability)
-> The system detected 3 threat indicators: Authority Threat, Urgency Pressure, and Payment Demand.
-
-![High Risk Result](assets/screenshots/scam_result.png)
-
----
-
-### No Threat Detected — Safe Result (15% Scam Probability)
-> Green classification: message verified as legitimate with 85% confidence.
-
-![Safe Result](assets/screenshots/safe_result.png)
+> Dark-themed tactical HUD with animated SVG score arc, threat indicator chips, OCR image upload, and a downloadable intelligence brief.
 
 ---
 
@@ -205,33 +188,27 @@ The inference engine uses a **two-stage approach** to maximize both speed and ac
 Sentinel/
 │
 ├── app/
-│   ├── app.py                  # Flask routes: /, /analyze, /download_report
+│   ├── app.py                  # Flask routes: /, /analyze, /ocr_analyze, /download_report
 │   ├── inference.py            # Hybrid prediction engine (rules + DistilBERT)
+│   ├── ocr.py                  # Image → text extraction via Tesseract
 │   ├── pdf_generator.py        # Structured Intelligence Brief PDF generator
 │   └── templates/
 │       └── index.html          # Tactical HUD SPA (Tailwind CSS, dark theme)
 │
 ├── models/
-│   ├── sentinel_model/         # Fine-tuned DistilBERT weights
-│   │   ├── config.json
-│   │   ├── model.safetensors   # ⚠️ 255 MB — not in repo, download separately
-│   │   ├── tokenizer.json
-│   │   └── tokenizer_config.json
-│   ├── train_model.py          # Training script v1
-│   └── train_model_v2.py       # Training script v2 (used for final model)
+│   └── train_model_v2.py       # Training script (for reference — model on HuggingFace)
 │
 ├── data/
-│   ├── sentinel_dataset_audited.csv     # Curated labeled dataset
-│   └── sentinel_dataset_expanded.csv    # Extended dataset for training
+│   └── sentinel_dataset_v3_final.csv   # Final training dataset (14,000 rows, 60:40 ratio)
 │
-├── assets/
-│   ├── screenshots/            # UI screenshots for README
-│   └── process_flow_diagram.png
-│
+├── Dockerfile                  # HuggingFace Spaces deployment (port 7860)
 ├── requirements.txt
 ├── .gitignore
 └── README.md
 ```
+
+> ⚠️ The trained model weights are **not stored locally** — they are loaded directly from
+> [`Shade63/sentinel-model`](https://huggingface.co/Shade63/sentinel-model) on HuggingFace Hub.
 
 ---
 
@@ -298,7 +275,7 @@ cd app
 python app.py
 ```
 
-Open **http://127.0.0.1:5000** in your browser.
+Open **http://127.0.0.1:7860** in your browser.
 
 ---
 
