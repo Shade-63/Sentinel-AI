@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import torch
 from sklearn.model_selection import train_test_split
@@ -133,8 +134,6 @@ print(f"  F1 Score: {eval_results['eval_f1']:.4f}")
 print(f"  Precision: {eval_results['eval_precision']:.4f}")
 print(f"  Recall: {eval_results['eval_recall']:.4f}")
 
-# Save model (use absolute path to avoid nested directories)
-import os
 script_dir = os.path.dirname(os.path.abspath(__file__))
 save_path = os.path.join(script_dir, "sentinel_model")
 model.save_pretrained(save_path)
